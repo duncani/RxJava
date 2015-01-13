@@ -19,6 +19,7 @@ import rx.Observer;
 import rx.exceptions.OnErrorNotImplementedException;
 import rx.functions.Action0;
 import rx.functions.Action1;
+import rx.functions.Actions;
 
 /**
  * Helper methods and utilities for creating and working with {@link Observer} objects.
@@ -28,23 +29,13 @@ public final class Observers {
         throw new IllegalStateException("No instances!");
     }
 
-    private static final Observer<Object> EMPTY = new Observer<Object>() {
+    private static final Observer<Object> EMPTY = create(Actions.empty());
 
+    public static final Action1<Throwable> ON_ERROR_NOT_IMPLEMENTED_ACTION = new Action1<Throwable>() {
         @Override
-        public final void onCompleted() {
-            // do nothing
+        public void call(Throwable throwable) {
+            throw new OnErrorNotImplementedException(throwable);
         }
-
-        @Override
-        public final void onError(Throwable e) {
-            throw new OnErrorNotImplementedException(e);
-        }
-
-        @Override
-        public final void onNext(Object args) {
-            // do nothing
-        }
-
     };
 
     /**
@@ -72,28 +63,8 @@ public final class Observers {
      *         the {@code Observer} subscribes to
      */
     public static final <T> Observer<T> create(final Action1<? super T> onNext) {
-        if (onNext == null) {
-            throw new IllegalArgumentException("onNext can not be null");
-        }
+        return create(onNext, ON_ERROR_NOT_IMPLEMENTED_ACTION);
 
-        return new Observer<T>() {
-
-            @Override
-            public final void onCompleted() {
-                // do nothing
-            }
-
-            @Override
-            public final void onError(Throwable e) {
-                throw new OnErrorNotImplementedException(e);
-            }
-
-            @Override
-            public final void onNext(T args) {
-                onNext.call(args);
-            }
-
-        };
     }
 
     /**
@@ -112,31 +83,7 @@ public final class Observers {
      *         of an error
      */
     public static final <T> Observer<T> create(final Action1<? super T> onNext, final Action1<Throwable> onError) {
-        if (onNext == null) {
-            throw new IllegalArgumentException("onNext can not be null");
-        }
-        if (onError == null) {
-            throw new IllegalArgumentException("onError can not be null");
-        }
-
-        return new Observer<T>() {
-
-            @Override
-            public final void onCompleted() {
-                // do nothing
-            }
-
-            @Override
-            public final void onError(Throwable e) {
-                onError.call(e);
-            }
-
-            @Override
-            public final void onNext(T args) {
-                onNext.call(args);
-            }
-
-        };
+        return create(onNext, onError, Actions.empty());
     }
 
     /**

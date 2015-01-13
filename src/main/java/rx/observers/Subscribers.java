@@ -17,14 +17,18 @@ package rx.observers;
 
 import rx.Observer;
 import rx.Subscriber;
-import rx.exceptions.OnErrorNotImplementedException;
+import rx.functions.Action;
 import rx.functions.Action0;
 import rx.functions.Action1;
+import rx.functions.Actions;
 
 /**
  * Helper methods and utilities for creating and working with {@link Subscriber} objects.
  */
 public final class Subscribers {
+
+    private static final Subscriber<Object> EMPTY = from(Observers.empty());
+
     private Subscribers() {
         throw new IllegalStateException("No instances!");
     }
@@ -37,8 +41,9 @@ public final class Subscribers {
      *
      * @return an inert {@code Observer}
      */
+    @SuppressWarnings("unchecked")
     public static <T> Subscriber<T> empty() {
-        return from(Observers.empty());
+        return (Subscriber<T>)EMPTY;
     }
 
     /**
@@ -53,12 +58,22 @@ public final class Subscribers {
 
             @Override
             public void onCompleted() {
-                o.onCompleted();
+                try {
+                    o.onCompleted();
+                }
+                finally {
+                    unsubscribe();
+                }
             }
 
             @Override
             public void onError(Throwable e) {
-                o.onError(e);
+                try {
+                    o.onError(e);
+                }
+                finally {
+                    unsubscribe();
+                }
             }
 
             @Override
@@ -82,28 +97,7 @@ public final class Subscribers {
      *         the {@code Subscriber} subscribes to
      */
     public static final <T> Subscriber<T> create(final Action1<? super T> onNext) {
-        if (onNext == null) {
-            throw new IllegalArgumentException("onNext can not be null");
-        }
-
-        return new Subscriber<T>() {
-
-            @Override
-            public final void onCompleted() {
-                // do nothing
-            }
-
-            @Override
-            public final void onError(Throwable e) {
-                throw new OnErrorNotImplementedException(e);
-            }
-
-            @Override
-            public final void onNext(T args) {
-                onNext.call(args);
-            }
-
-        };
+        return create(onNext, Observers.ON_ERROR_NOT_IMPLEMENTED_ACTION);
     }
 
     /**
@@ -122,31 +116,7 @@ public final class Subscribers {
      *         notifies of an error
      */
     public static final <T> Subscriber<T> create(final Action1<? super T> onNext, final Action1<Throwable> onError) {
-        if (onNext == null) {
-            throw new IllegalArgumentException("onNext can not be null");
-        }
-        if (onError == null) {
-            throw new IllegalArgumentException("onError can not be null");
-        }
-
-        return new Subscriber<T>() {
-
-            @Override
-            public final void onCompleted() {
-                // do nothing
-            }
-
-            @Override
-            public final void onError(Throwable e) {
-                onError.call(e);
-            }
-
-            @Override
-            public final void onNext(T args) {
-                onNext.call(args);
-            }
-
-        };
+        return create(onNext, onError, Actions.empty());
     }
 
     /**
@@ -182,12 +152,22 @@ public final class Subscribers {
 
             @Override
             public final void onCompleted() {
-                onComplete.call();
+                try {
+                    onComplete.call();
+                }
+                finally {
+                    unsubscribe();
+                }
             }
 
             @Override
             public final void onError(Throwable e) {
-                onError.call(e);
+                try {
+                    onError.call(e);
+                }
+                finally {
+                    unsubscribe();
+                }
             }
 
             @Override
