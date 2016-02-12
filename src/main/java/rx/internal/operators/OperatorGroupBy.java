@@ -161,12 +161,9 @@ public class OperatorGroupBy<T, K, R> implements Operator<GroupedObservable<K, R
                     emitItem(group, nl.completed());
                 }
 
-                // special case (no groups emitted ... or all unsubscribed)
-                if (groups.isEmpty()) {
-                    // we must track 'completionEmitted' seperately from 'completed' since `completeInner` can result in childObserver.onCompleted() being emitted
-                    if (COMPLETION_EMITTED_UPDATER.compareAndSet(this, 0, 1)) {
-                        child.onCompleted();
-                    }
+                // we must track 'completionEmitted' seperately from 'completed' since `completeInner` can result in childObserver.onCompleted() being emitted
+                if (COMPLETION_EMITTED_UPDATER.compareAndSet(this, 0, 1)) {
+                    child.onCompleted();
                 }
             }
         }
